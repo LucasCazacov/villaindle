@@ -1,33 +1,25 @@
-import React, { useState } from 'react';
-import { CharacterInput } from './CharacterInput';
-import { AttributeTable } from './AttributeTable';
-import { ResultMessage } from './ResultMessage';
-import { useVillaindle } from '../contexts/VillaindleContext';
+import React from 'react';
+import CharacterInput from './CharacterInput';
+import AttributeTable from './AttributeTable';
+import ResultMessage from './ResultMessage'; // Revertendo para importação padrão
+import { useVillaindle } from '../hooks/useVillaindle';
 
-export const GameBoard: React.FC = () => {
+export const GameBoard: React.FC = () => { // Mudança para exportação nomeada aqui
   const { 
     gameState,
-    makeGuess,
-    dailyVillain,
-    previousGuesses,
-    gameOver,
-    gameWon,
-    giveUp
+    guesses,
+    currentAttempt,
+    maxAttempts,
+    openModal
   } = useVillaindle();
   
-  const [inputValue, setInputValue] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!inputValue.trim()) {
-      return;
+  const handleGiveUp = () => {
+    if (gameState === 'PLAYING') {
+      openModal('stats');
     }
-    
-    const villain = inputValue.trim();
-    makeGuess(villain);
-    setInputValue('');
   };
+
+  const isGameOver = gameState === 'WON' || gameState === 'LOST';
 
   return (
     <div className="max-w-[90vw] mx-auto">
@@ -38,19 +30,16 @@ export const GameBoard: React.FC = () => {
         <p className="text-gray-400">Can you guess today's infamous villain?</p>
       </div>
 
-      {gameOver ? (
+      {isGameOver ? (
         <ResultMessage />
       ) : (
         <>
-          <CharacterInput 
-            value={inputValue} 
-            onChange={setInputValue} 
-            onSubmit={handleSubmit}
-          />
+          <CharacterInput />
           <div className="flex justify-center mb-8">
             <button
-              onClick={giveUp}
+              onClick={handleGiveUp}
               className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              disabled={isGameOver}
             >
               Desistir
             </button>
@@ -59,14 +48,17 @@ export const GameBoard: React.FC = () => {
       )}
       
       <div className="mt-8">
-        <AttributeTable previousGuesses={previousGuesses} dailyVillain={dailyVillain} />
+        <AttributeTable />
       </div>
       
-      {gameState === 'playing' && previousGuesses.length > 0 && (
+      {gameState === 'PLAYING' && guesses.length > 0 && (
         <div className="mt-4 text-center text-sm text-gray-400">
-          <p>Keep trying! Check the attribute matches above for hints.</p>
+          <p>Continue tentando! Verifique as correspondências dos atributos acima para obter dicas.</p>
+          <p>Tentativas: {currentAttempt} / {maxAttempts}</p>
         </div>
       )}
     </div>
   );
 };
+
+export default GameBoard; // <-- EXPORTAÇÃO PADRÃO

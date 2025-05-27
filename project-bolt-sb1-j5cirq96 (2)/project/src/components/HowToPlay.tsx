@@ -1,4 +1,3 @@
-// project/src/components/HowToPlay.tsx
 import React, { useContext } from 'react';
 import { VillaindleContext } from '../contexts/VillaindleContext';
 
@@ -67,4 +66,4 @@ const HowToPlay: React.FC = () => {
   );
 };
 
-export default HowToPlay;
+export default HowToPlay; // <-- EXPORTAÇÃO PADRÃO

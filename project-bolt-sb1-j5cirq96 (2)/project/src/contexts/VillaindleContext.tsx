@@ -43,28 +43,33 @@ export const VillaindleProvider: React.FC<VillaindleProviderProps> = ({ children
       const savedGuesses = localStorage.getItem('villaindle_guesses');
       const savedGameState = localStorage.getItem('villaindle_gameState');
       const savedCurrentAttempt = localStorage.getItem('villaindle_currentAttempt');
+      const savedVillainName = localStorage.getItem('villaindle_dailyVillainName');
 
-      if (savedGuesses) setGuesses(JSON.parse(savedGuesses));
-      if (savedGameState) setGameState(savedGameState as GameState);
-      if (savedCurrentAttempt) setCurrentAttempt(parseInt(savedCurrentAttempt, 10));
+      if (savedGuesses && savedVillainName === todayVillain.name) {
+         setGuesses(JSON.parse(savedGuesses));
+         if (savedGameState) setGameState(savedGameState as GameState);
+         if (savedCurrentAttempt) setCurrentAttempt(parseInt(savedCurrentAttempt, 10));
+      } else {
+        localStorage.removeItem('villaindle_guesses');
+        localStorage.removeItem('villaindle_gameState');
+        localStorage.removeItem('villaindle_currentAttempt');
+        localStorage.setItem('villaindle_dailyVillainName', todayVillain.name);
+      }
     } else {
-      // Novo dia, reseta o progresso do jogo
       localStorage.removeItem('villaindle_guesses');
       localStorage.removeItem('villaindle_gameState');
       localStorage.removeItem('villaindle_currentAttempt');
       localStorage.setItem('villaindle_date', todayDate);
-      // Se o dia mudou e o jogo anterior não foi concluído (nem ganho nem perdido), conta como não jogado/interrompido
-      // (não afeta streak de vitórias, mas também não conta como derrota)
+      localStorage.setItem('villaindle_dailyVillainName', todayVillain.name);
     }
 
     const savedStats = localStorage.getItem('villaindle_stats');
     if (savedStats) {
       setStats(JSON.parse(savedStats));
     } else {
-      setStats(initialStats); // Garante que stats não seja undefined
+      setStats(initialStats);
     }
     
-    // Verifica se é a primeira vez jogando para abrir o modal "Como Jogar"
     const hasPlayedBefore = localStorage.getItem('villaindle_hasPlayedBefore');
     if (!hasPlayedBefore) {
         openModal('howToPlay');
@@ -75,27 +80,33 @@ export const VillaindleProvider: React.FC<VillaindleProviderProps> = ({ children
 
   // Salvar estado no localStorage sempre que mudar
   useEffect(() => {
-    if (guesses.length > 0 || gameState !== GameState.PLAYING || currentAttempt > 0) {
+    if (!villainToGuess) return;
+
+    if (guesses.length > 0 || (gameState !== GameState.PLAYING && currentAttempt > 0) || gameState === GameState.WON || gameState === GameState.LOST) {
       localStorage.setItem('villaindle_guesses', JSON.stringify(guesses));
       localStorage.setItem('villaindle_gameState', gameState);
       localStorage.setItem('villaindle_currentAttempt', currentAttempt.toString());
+      localStorage.setItem('villaindle_dailyVillainName', villainToGuess.name);
+      localStorage.setItem('villaindle_date', new Date().toLocaleDateString());
     }
     localStorage.setItem('villaindle_stats', JSON.stringify(stats));
-  }, [guesses, gameState, currentAttempt, stats]);
+  }, [guesses, gameState, currentAttempt, stats, villainToGuess]);
 
 
-  const updateStats = useCallback((won: boolean, attempts: number) => {
+  const updateStats = useCallback((won: boolean, attemptsUsed: number) => {
     setStats(prevStats => {
       const newStats = { ...prevStats };
-      newStats.gamesPlayed += 1;
+      newStats.gamesPlayed = (prevStats.gamesPlayed || 0) + 1;
+
       if (won) {
-        newStats.gamesWon += 1;
-        newStats.currentStreak += 1;
-        if (newStats.currentStreak > newStats.maxStreak) {
-          newStats.maxStreak = newStats.currentStreak;
-        }
-        if (attempts >= 1 && attempts <= MAX_ATTEMPTS) {
-          newStats.winDistribution[attempts as keyof StatsData['winDistribution']] += 1;
+        newStats.gamesWon = (prevStats.gamesWon || 0) + 1;
+        newStats.currentStreak = (prevStats.currentStreak || 0) + 1;
+        newStats.maxStreak = Math.max(newStats.currentStreak, (prevStats.maxStreak || 0));
+        
+        if (attemptsUsed >= 1 && attemptsUsed <= MAX_ATTEMPTS) {
+          const currentDistribution = { ...initialStats.winDistribution, ...prevStats.winDistribution };
+          currentDistribution[attemptsUsed as keyof StatsData['winDistribution']] = (currentDistribution[attemptsUsed as keyof StatsData['winDistribution']] || 0) + 1;
+          newStats.winDistribution = currentDistribution;
         }
       } else {
         newStats.currentStreak = 0;
@@ -111,9 +122,7 @@ export const VillaindleProvider: React.FC<VillaindleProviderProps> = ({ children
     const guessedVillain = allVillainsData.find(v => v.name.toLowerCase() === guessedVillainName.toLowerCase());
 
     if (!guessedVillain) {
-      // Idealmente, o CharacterInput evitaria isso, mas é bom ter um fallback.
       console.warn("Vilão não encontrado:", guessedVillainName);
-      // Poderia adicionar um feedback para o usuário aqui (ex: toast message)
       return;
     }
 
@@ -144,7 +153,9 @@ export const VillaindleProvider: React.FC<VillaindleProviderProps> = ({ children
     localStorage.removeItem('villaindle_guesses');
     localStorage.removeItem('villaindle_gameState');
     localStorage.removeItem('villaindle_currentAttempt');
-    localStorage.setItem('villaindle_date', new Date().toLocaleDateString()); // Garante que a data seja atualizada
+    const todayDate = new Date().toLocaleDateString();
+    localStorage.setItem('villaindle_date', todayDate);
+    localStorage.setItem('villaindle_dailyVillainName', todayVillain.name);
   }, []);
 
 

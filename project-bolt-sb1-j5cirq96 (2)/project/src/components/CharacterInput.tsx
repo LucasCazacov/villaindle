@@ -12,14 +12,10 @@ const CharacterInput: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLUListElement>(null);
 
-  // Adicione esta verificação:
   if (!context) {
-    // Você pode retornar null, um spinner de carregamento, ou uma mensagem de erro.
-    // Retornar null é comum se o contexto ainda não estiver pronto.
-    return null; 
+    return null;
   }
 
-  // Agora é seguro desestruturar, pois context não é undefined aqui.
   const { villains, handleGuess, gameState, currentAttempt, maxAttempts, guesses } = context;
 
   const isDisabled = gameState !== GameState.PLAYING || currentAttempt >= maxAttempts;
@@ -44,15 +40,15 @@ const CharacterInput: React.FC = () => {
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setInputValue(value);
-    setActiveSuggestionIndex(-1); // Reset active suggestion on change
+    setActiveSuggestionIndex(-1);
 
     if (value.length > 0) {
       const filteredSuggestions = villains
         .filter(villain =>
           villain.name.toLowerCase().includes(value.toLowerCase()) &&
-          !guesses.find(g => g.villainName.toLowerCase() === villain.name.toLowerCase()) // Não sugere já tentados
+          !guesses.some(g => g.villainName.toLowerCase() === villain.name.toLowerCase())
         )
-        .slice(0, 7); // Limita o número de sugestões
+        .slice(0, 7);
       setSuggestions(filteredSuggestions);
       setShowSuggestions(true);
     } else {
@@ -65,8 +61,6 @@ const CharacterInput: React.FC = () => {
     setInputValue(villainName);
     setSuggestions([]);
     setShowSuggestions(false);
-    // Opcional: submeter diretamente ao clicar na sugestão
-    // handleSubmitInternal(villainName); 
     if (inputRef.current) {
       inputRef.current.focus();
     }
@@ -76,43 +70,37 @@ const CharacterInput: React.FC = () => {
     if (villainNameToGuess.trim() && !isDisabled) {
       const selectedVillain = villains.find(v => v.name.toLowerCase() === villainNameToGuess.toLowerCase());
       if (selectedVillain) {
-          // Verifica se o vilão já foi tentado
           const alreadyGuessed = guesses.some(g => g.villainName.toLowerCase() === selectedVillain.name.toLowerCase());
           if (!alreadyGuessed) {
               handleGuess(selectedVillain.name);
               setInputValue('');
               setSuggestions([]);
               setShowSuggestions(false);
+              inputRef.current?.blur();
           } else {
-              // Feedback de que o vilão já foi tentado (pode ser um toast, alert, etc.)
               console.warn("Vilão já tentado:", selectedVillain.name);
-              setInputValue(''); // Limpa o input mesmo se já tentado
+              alert(`Você já tentou o vilão ${selectedVillain.name}!`);
+              setInputValue('');
+              setSuggestions([]);
               setShowSuggestions(false);
           }
       } else {
-          // Feedback de vilão inválido (opcional, se o usuário conseguir submeter sem selecionar sugestão)
-          console.warn("Vilão inválido selecionado:", villainNameToGuess);
+          console.warn("Nenhum vilão correspondente:", villainNameToGuess);
+          alert(`Nenhum vilão encontrado com o nome "${villainNameToGuess}". Por favor, digite um nome válido.`);
+          setInputValue('');
+          setSuggestions([]);
+          setShowSuggestions(false);
       }
     }
   };
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
     if (activeSuggestionIndex >= 0 && suggestions[activeSuggestionIndex]) {
       handleSubmitInternal(suggestions[activeSuggestionIndex].name);
     } else if (inputValue.trim()) {
-      // Tenta encontrar um match exato se o usuário não usou as setas/clique
-      const exactMatch = villains.find(v => v.name.toLowerCase() === inputValue.toLowerCase());
-      if (exactMatch) {
-          handleSubmitInternal(exactMatch.name);
-      } else if (suggestions.length > 0) {
-        // Se houver sugestões e nenhuma ativa, pode pegar a primeira, ou dar um feedback
-        handleSubmitInternal(suggestions[0].name); // Ou não fazer nada/mostrar erro
-      } else {
-        // Nenhuma sugestão, nenhum match exato, feedback de vilão não encontrado
-        console.warn("Nenhum vilão correspondente para submeter:", inputValue);
-        // Poderia exibir uma mensagem para o usuário
-      }
+      handleSubmitInternal(inputValue.trim());
     }
   };
 
@@ -129,12 +117,17 @@ const CharacterInput: React.FC = () => {
         e.preventDefault();
         setActiveSuggestionIndex(prevIndex => (prevIndex > 0 ? prevIndex - 1 : 0));
       } else if (e.key === 'Enter') {
-        // O submit do form já lida com Enter, mas se quiser um comportamento específico
-        // quando uma sugestão está ativa e o usuário pressiona Enter, pode ser tratado aqui.
-        // A lógica atual do handleSubmit já considera activeSuggestionIndex.
+        // Se uma sugestão está ativa, o Enter deve selecioná-la e submeter.
         if (activeSuggestionIndex >= 0 && suggestions[activeSuggestionIndex]) {
-            // handleSubmit já é chamado pelo form, mas para garantir que use a sugestão ativa:
-            // setInputValue(suggestions[activeSuggestionIndex].name); // Preenche o input antes do submit
+            setInputValue(suggestions[activeSuggestionIndex].name); // Preenche o input
+            setShowSuggestions(false); // Esconde sugestões
+            setActiveSuggestionIndex(-1); // Reseta a sugestão ativa
+            // Deixa o form fazer o submit via onSubmit, que já está configurado
+        } else {
+            // Se não há sugestão ativa, mas o campo não está vazio, submete o que foi digitado
+            // O e.preventDefault() aqui impede a página de recarregar se o input estiver dentro de um form
+            // e já o estamos fazendo no handleSubmit do form.
+            // Apenas certifique-se que o formulário está submetendo corretamente.
         }
       } else if (e.key === 'Escape') {
         setShowSuggestions(false);

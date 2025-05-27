@@ -1,23 +1,19 @@
 import React, { useContext } from 'react';
-import { VillaindleContext } from '../contexts/VillaindleContext'; // Ajuste o caminho se necessário
+import { VillaindleContext } from '../contexts/VillaindleContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faQuestionCircle, faChartBar } from '@fortawesome/free-solid-svg-icons';
 
 const Header: React.FC = () => {
   const context = useContext(VillaindleContext);
 
-  // Adicione esta verificação:
   if (!context) {
-    // Pode retornar um header simplificado ou null enquanto o contexto carrega
     return (
       <header className="p-4 bg-gray-800 text-white flex justify-between items-center shadow-md">
         <h1 className="text-2xl md:text-3xl font-bold text-red-500 tracking-wider">VillainDle</h1>
-        {/* Ícones desabilitados ou não presentes até o contexto carregar */}
       </header>
     );
   }
 
-  // Agora é seguro desestruturar, pois context não é undefined aqui.
   const { openModal } = context;
 
   return (
@@ -43,4 +39,4 @@ const Header: React.FC = () => {
   );
 };
 
-export default Header;
+export default Header; // <-- EXPORTAÇÃO PADRÃO

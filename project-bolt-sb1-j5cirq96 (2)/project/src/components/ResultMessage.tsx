@@ -1,20 +1,18 @@
 import React, { useContext } from 'react';
-import { VillaindleContext } from '../contexts/VillaindleContext'; // Ajuste o caminho se necessário
+import { VillaindleContext } from '../contexts/VillaindleContext';
 import { GameState } from '../types';
 
 const ResultMessage: React.FC = () => {
   const context = useContext(VillaindleContext);
 
-  // Adicione esta verificação:
   if (!context) {
-    return null; // Não renderiza nada se o contexto não estiver pronto
+    return null;
   }
 
-  // Agora é seguro desestruturar.
   const { gameState, villainToGuess, restartGame, openModal, guesses } = context;
 
   if (gameState === GameState.PLAYING) {
-    return null; // Não mostra mensagem se o jogo está em andamento
+    return null;
   }
 
   const isWin = gameState === GameState.WON;
@@ -37,13 +35,12 @@ const ResultMessage: React.FC = () => {
             </p>
         )}
 
-        {/* Adicionar imagem do vilão se existir */}
         {!isWin && villainToGuess?.imageUrl && (
           <img 
             src={villainToGuess.imageUrl} 
             alt={villainToGuess.name} 
             className="mx-auto my-4 rounded-lg max-w-xs w-full h-auto object-cover shadow-lg"
-            onError={(e) => (e.currentTarget.style.display = 'none')} // Esconde se a imagem falhar
+            onError={(e) => (e.currentTarget.style.display = 'none')}
           />
         )}
         {isWin && villainToGuess?.imageUrl && (
@@ -75,4 +72,4 @@ const ResultMessage: React.FC = () => {
   );
 };
 
-export default ResultMessage;
+export default ResultMessage; // <-- EXPORTAÇÃO PADRÃO

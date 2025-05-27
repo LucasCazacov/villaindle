@@ -1,13 +1,11 @@
-import React, { useContext } from 'react'; // Importação padrão do React
-import { Guess, AttributeComparison, Villain } from '../types'; // Supondo que seus tipos estão aqui
-import { VillaindleContext } from '../contexts/VillaindleContext'; // Se precisar do contexto aqui
+import React, { useContext } from 'react';
+import { Guess, AttributeComparison, Villain } from '../types';
+import { VillaindleContext } from '../contexts/VillaindleContext';
 
-// Defina as props esperadas pelo AttributeRow
 interface AttributeRowProps {
-  guess: Guess; // A tentativa específica para esta linha
+  guess: Guess;
 }
 
-// Mapeamento de chaves de atributos para nomes amigáveis (opcional, mas bom para exibição)
 const attributeDisplayNames: Record<keyof Omit<Villain, 'id' | 'name' | 'imageUrl'>, string> = {
   universe: 'Universo',
   gender: 'Gênero',
@@ -23,20 +21,12 @@ const attributeDisplayNames: Record<keyof Omit<Villain, 'id' | 'name' | 'imageUr
 const AttributeRow: React.FC<AttributeRowProps> = ({ guess }) => {
   const context = useContext(VillaindleContext);
 
-  // Verificação de contexto, se realmente for necessário neste componente.
-  // Se AttributeRow apenas exibe dados da prop 'guess', o contexto pode não ser necessário aqui diretamente.
   if (!context) {
-    // Se o contexto for realmente necessário, retorne um loader ou null.
-    // Caso contrário, se 'guess' for suficiente, esta verificação pode ser removida.
-    // Por exemplo, se villainToGuess fosse usado para algo, precisaria do contexto.
     return <tr className="bg-gray-700"><td colSpan={Object.keys(attributeDisplayNames).length + 1}>Carregando...</td></tr>;
   }
 
-  // const { villainToGuess } = context; // Descomente se precisar do vilão correto para alguma lógica aqui
-
   const { comparisons, villainName } = guess;
 
-  // Define a ordem de exibição dos atributos
   const orderedAttributeKeys = Object.keys(attributeDisplayNames) as (keyof Guess['comparisons'])[];
 
   return (
@@ -45,17 +35,13 @@ const AttributeRow: React.FC<AttributeRowProps> = ({ guess }) => {
         {villainName}
       </td>
       {orderedAttributeKeys.map((attributeKey) => {
-        // Correção do erro de tipo implícito 'any' e 'key' não utilizada:
-        // A variável 'key' da desestruturação de Object.entries não é mais necessária se usarmos attributeKey
-        // E 'comparison' agora é tipado corretamente.
         const comparison: AttributeComparison | undefined = comparisons[attributeKey];
         
-        let cellClassName = 'px-3 py-3 text-xs md:text-sm text-gray-300 whitespace-nowrap';
+        let cellClassName = 'px-3 py-3 text-xs md:text-sm text-gray-300 whitespace-nowrap text-center';
         let displayValue: string | number | undefined = '';
         let arrowIndicator: JSX.Element | null = null;
 
         if (comparison) {
-          // Converte arrays para string para exibição, ou usa o valor diretamente
           if (Array.isArray(comparison.value)) {
             displayValue = comparison.value.join(', ');
           } else {
@@ -63,7 +49,7 @@ const AttributeRow: React.FC<AttributeRowProps> = ({ guess }) => {
           }
 
           if (!displayValue && (attributeKey === 'powers' || attributeKey === 'weaknesses') && Array.isArray(comparison.value) && comparison.value.length === 0){
-            displayValue = "Nenhum(a)"; // Exibe "Nenhum(a)" para poderes/fraquezas vazios
+            displayValue = "Nenhum(a)";
           }
 
 
@@ -75,4 +61,35 @@ const AttributeRow: React.FC<AttributeRowProps> = ({ guess }) => {
               cellClassName += ' bg-yellow-500 bg-opacity-70 text-gray-900 font-semibold';
               break;
             case 'incorrect':
-              cellClassName +=
+              cellClassName += ' bg-red-700 bg-opacity-50 text-gray-200';
+              break;
+            case 'lower':
+              cellClassName += ' bg-blue-700 bg-opacity-50 text-white';
+              arrowIndicator = <span className="ml-1 text-xl align-middle">↓</span>;
+              break;
+            case 'higher':
+              cellClassName += ' bg-blue-700 bg-opacity-50 text-white';
+              arrowIndicator = <span className="ml-1 text-xl align-middle">↑</span>;
+              break;
+            default:
+              break;
+          }
+        } else {
+          displayValue = 'N/A';
+          cellClassName += ' bg-gray-700 bg-opacity-30';
+        }
+
+        return (
+          <td key={attributeKey} className={cellClassName}>
+            <div className="flex items-center justify-center">
+              {displayValue}
+              {arrowIndicator}
+            </div>
+          </td>
+        );
+      })}
+    </tr>
+  );
+};
+
+export default AttributeRow;

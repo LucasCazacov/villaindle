@@ -1,4 +1,3 @@
-// project/src/components/Stats.tsx
 import React, { useContext } from 'react';
 import { VillaindleContext } from '../contexts/VillaindleContext';
 import { GameState } from '../types';
@@ -17,12 +16,10 @@ const Stats: React.FC = () => {
 
     const title = `VillainDle - Vilão do Dia!`;
     let resultEmojis = guesses.map(guess => {
-        // Simplificação: Verde para acerto no nome, Senão Vermelho.
-        // Você pode criar uma lógica mais detalhada para emojis por atributo.
         return guess.isCorrectGuess ? '🟩' : '🟥';
     }).join('');
 
-    if(guesses.length < maxAttempts && gameState !== GameState.WON){ // Jogo não terminado mas modal aberto
+    if(guesses.length < maxAttempts && gameState !== GameState.WON){
         resultEmojis += '⬜'.repeat(maxAttempts - guesses.length);
     }
 
@@ -79,7 +76,7 @@ const Stats: React.FC = () => {
         <h3 className="text-lg font-semibold mb-3 text-center text-red-400">Distribuição de Tentativas</h3>
         <div className="space-y-1 mb-6">
           {Object.entries(stats.winDistribution).map(([attempt, count]) => {
-            const maxCount = Math.max(...Object.values(stats.winDistribution), 1); // Evita divisão por zero
+            const maxCount = Math.max(...Object.values(stats.winDistribution), 1);
             const percentage = maxCount > 0 ? (count / maxCount) * 100 : 0;
             const isCurrentGameAttempt = gameState === GameState.WON && guesses.length === parseInt(attempt);
             
@@ -89,7 +86,7 @@ const Stats: React.FC = () => {
                 <div className="flex-grow bg-gray-700 rounded ml-2">
                   <div
                     className={`h-5 rounded ${isCurrentGameAttempt ? 'bg-green-500' : 'bg-red-500'} flex items-center justify-end pr-2`}
-                    style={{ width: `${Math.max(percentage, 5)}%` }} // min 5% para ser visível
+                    style={{ width: `${Math.max(percentage, 5)}%` }}
                   >
                     <span className="text-xs font-medium text-white">{count}</span>
                   </div>
@@ -119,4 +116,4 @@ const Stats: React.FC = () => {
   );
 };
 
-export default Stats;
+export default Stats; // <-- EXPORTAÇÃO PADRÃO
