@@ -1,98 +1,78 @@
-import React from 'react';
-import { Share2 } from 'lucide-react';
-import { useVillaindle } from '../contexts/VillaindleContext';
+import React, { useContext } from 'react';
+import { VillaindleContext } from '../contexts/VillaindleContext'; // Ajuste o caminho se necessário
+import { GameState } from '../types';
 
-export const ResultMessage: React.FC = () => {
-  const { gameState, gameWon, dailyVillain, previousGuesses, resetGame } = useVillaindle();
-  
-  const handleShare = () => {
-    const gameDate = new Date().toLocaleDateString();
-    const guessCount = previousGuesses.length;
-    
-    let shareText = `Villaindle ${gameDate}\n`;
-    
-    if (gameWon) {
-      shareText += `🎯 Adivinhei o vilão em ${guessCount} tentativas!\n\n`;
-    } else if (gameState === 'gave_up') {
-      shareText += `❌ Desisti! O vilão era: ${dailyVillain.name}\n\n`;
-    } else {
-      shareText += `❌ Não consegui adivinhar: ${dailyVillain.name}\n\n`;
-    }
-    
-    // Add emojis for each guess
-    previousGuesses.forEach((guess) => {
-      let emojiRow = '';
-      
-      Object.values(guess.matches).forEach((match) => {
-        switch (match.status) {
-          case 'correct':
-            emojiRow += '🟩';
-            break;
-          case 'partial':
-            emojiRow += '🟨';
-            break;
-          case 'incorrect':
-            emojiRow += '🟥';
-            break;
-        }
-      });
-      
-      shareText += `${emojiRow}\n`;
-    });
-    
-    shareText += '\nJogue você também: https://villaindle.com';
-    
-    navigator.clipboard.writeText(shareText)
-      .then(() => alert('Resultado copiado para a área de transferência!'))
-      .catch(() => alert('Erro ao copiar. Por favor, tente novamente.'));
-  };
+const ResultMessage: React.FC = () => {
+  const context = useContext(VillaindleContext);
+
+  // Adicione esta verificação:
+  if (!context) {
+    return null; // Não renderiza nada se o contexto não estiver pronto
+  }
+
+  // Agora é seguro desestruturar.
+  const { gameState, villainToGuess, restartGame, openModal, guesses } = context;
+
+  if (gameState === GameState.PLAYING) {
+    return null; // Não mostra mensagem se o jogo está em andamento
+  }
+
+  const isWin = gameState === GameState.WON;
+  const message = isWin ? 'Parabéns, você acertou!' : 'Fim de jogo! O vilão era:';
 
   return (
-    <div className="text-center p-8 border border-gray-700 rounded-lg bg-gray-800 shadow-lg animate-fadeIn">
-      {gameWon ? (
-        <>
-          <h2 className="text-2xl font-bold text-green-400 mb-2">Parabéns!</h2>
-          <p className="text-lg mb-4">
-            Você acertou o vilão em {previousGuesses.length} tentativas!
+    <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-40 p-4 text-center">
+      <div className="bg-gray-800 p-6 md:p-8 rounded-lg shadow-2xl text-white max-w-md w-full">
+        <h2 className={`text-2xl md:text-3xl font-bold mb-4 ${isWin ? 'text-green-400' : 'text-red-400'}`}>
+          {message}
+        </h2>
+        {!isWin && villainToGuess && (
+          <p className="text-xl md:text-2xl font-semibold text-yellow-400 mb-5">
+            {villainToGuess.name}
           </p>
-        </>
-      ) : gameState === 'gave_up' ? (
-        <>
-          <h2 className="text-2xl font-bold text-yellow-500 mb-2">Você Desistiu!</h2>
-          <p className="text-lg mb-1">
-            O vilão de hoje era:
-          </p>
-          <p className="text-xl font-bold text-purple-400 mb-4">
-            {dailyVillain.name} de {dailyVillain.anime}
-          </p>
-        </>
-      ) : (
-        <>
-          <h2 className="text-2xl font-bold text-red-500 mb-2">Game Over!</h2>
-          <p className="text-lg mb-1">
-            O vilão de hoje era:
-          </p>
-          <p className="text-xl font-bold text-purple-400 mb-4">
-            {dailyVillain.name} de {dailyVillain.anime}
-          </p>
-        </>
-      )}
-      
-      <div className="flex justify-center gap-4 mt-6">
-        <button
-          onClick={handleShare}
-          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition-colors"
-        >
-          <Share2 size={18} />
-          Compartilhar
-        </button>
-        <button
-          onClick={resetGame}
-          className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-        >
-          Novo Jogo
-        </button>
+        )}
+        {isWin && villainToGuess && (
+            <p className="text-lg md:text-xl text-yellow-300 mb-2">
+                Você adivinhou: <span className="font-bold">{villainToGuess.name}</span> em {guesses.length} {guesses.length === 1 ? 'tentativa' : 'tentativas'}!
+            </p>
+        )}
+
+        {/* Adicionar imagem do vilão se existir */}
+        {!isWin && villainToGuess?.imageUrl && (
+          <img 
+            src={villainToGuess.imageUrl} 
+            alt={villainToGuess.name} 
+            className="mx-auto my-4 rounded-lg max-w-xs w-full h-auto object-cover shadow-lg"
+            onError={(e) => (e.currentTarget.style.display = 'none')} // Esconde se a imagem falhar
+          />
+        )}
+        {isWin && villainToGuess?.imageUrl && (
+             <img 
+             src={villainToGuess.imageUrl} 
+             alt={villainToGuess.name} 
+             className="mx-auto my-2 rounded-lg max-w-[150px] w-full h-auto object-cover shadow-md"
+             onError={(e) => (e.currentTarget.style.display = 'none')}
+           />
+        )}
+
+
+        <div className="mt-6 flex flex-col sm:flex-row sm:justify-center gap-3">
+          <button
+            onClick={restartGame}
+            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg text-lg transition-colors duration-200"
+          >
+            Jogar Novamente
+          </button>
+          <button
+            onClick={() => openModal('stats')}
+            className="w-full sm:w-auto bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-6 rounded-lg text-lg transition-colors duration-200"
+          >
+            Ver Estatísticas
+          </button>
+        </div>
       </div>
     </div>
   );
 };
+
+export default ResultMessage;
